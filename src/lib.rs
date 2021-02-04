@@ -5,9 +5,9 @@ extern crate log;
 #[macro_use]
 extern crate error_chain;
 
-extern crate fern;
+// extern crate fern;
 extern crate libc;
-extern crate libloading;
+// extern crate libloading;
 
 extern crate env_logger;
 

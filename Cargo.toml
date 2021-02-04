@@ -31,14 +31,14 @@ error-chain = "0.12.4"
 
 fern = "0.4.3"
 
-http = "0.2.3"
+# http = "0.2.3"
 libc = "0.2.84"
 
 libloading = "0.4.2"
 
 log = "0.3.8"
 
-reqwest = "0.8.0"
+# reqwest = "0.8.0"
 
 
 # serde_derive
