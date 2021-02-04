@@ -6,7 +6,6 @@
 
 error_chain!{
     foreign_links {
-        Reqwest(::reqwest::Error);
         Arrow(::arrow::error::ArrowError);
         DataFusion(::datafusion::error::DataFusionError);
         Fmt(::std::fmt::Error);
