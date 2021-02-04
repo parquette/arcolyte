@@ -51,3 +51,12 @@ futures = "0.3.12"
 # tokio = { version = "1.1.1", features = ["time", "macros", "rt-threaded"] }
 # tokio = "1.1.1"
 tokio = {version = "0.2.13", features = ["rt-core"]}
+
+
+[profile.release]
+# Tell `rustc` to optimize for small code size.
+opt-level = "s"
+# Smaller code size: https://rustwasm.github.io/book/reference/code-size.html
+lto = true
+
+
