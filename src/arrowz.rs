@@ -339,8 +339,8 @@ pub extern fn load_arrow_file(fname: *mut c_char) {
 
 #[repr(C)]
 pub struct ArrowSchemaArray {
-    schema: *const FFI_ArrowSchema,
     array: *const FFI_ArrowArray,
+    schema: *const FFI_ArrowSchema,
 }
 
 #[allow(dead_code)]
@@ -580,7 +580,7 @@ pub unsafe extern "C" fn datafusion_array_empty_create() -> *mut ExtArrowArray {
 #[allow(dead_code)]
 #[allow(unused_variables)]
 #[no_mangle]
-pub unsafe extern "C" fn datafusion_dataframe_collect_array(ptr: *mut DataFrameState, index: usize) -> *mut ExtArrowArray { 
+pub unsafe extern "C" fn datafusion_dataframe_collect_array(ptr: *mut DataFrameState, index: usize) -> ArrowSchemaArray { 
     assert!(!ptr.is_null());
     let df = &mut *ptr;
 
@@ -612,21 +612,43 @@ pub unsafe extern "C" fn datafusion_dataframe_collect_array(ptr: *mut DataFrameS
 
     // convery the array to the C structs
     let raw: (*const FFI_ArrowArray, *const FFI_ArrowSchema) = array.to_raw().unwrap();
+    let array = raw.0;
+    let schema = raw.1;
+        
+    let asa = ArrowSchemaArray { array, schema };
+
+    asa
+    // return asa;
 
     // and re-wrap them in Arc
-    let array: ArrowArray = ArrowArray::try_from_raw(raw.0, raw.1).unwrap();
+    // let array: ArrowArray = ArrowArray::try_from_raw(raw.0, raw.1).unwrap();
 
-    Box::into_raw(Box::new(array))
+    // Box::into_raw(Box::new(array))
 }
 
 #[allow(dead_code)]
 #[allow(unused_variables)]
 #[no_mangle]
-pub unsafe extern "C" fn datafusion_array_schema_get(ptr: *mut ArrowArray) { // -> *const FFI_ArrowSchema {
-    assert!(!ptr.is_null());
+pub unsafe extern "C" fn datafusion_array_array_get(array: ArrowArray) -> *const FFI_ArrowArray {
+    ArrowArray::into_raw(array).0
+}
 
-    let carray: *const ArrowArray = ptr;
-    let array: &*const ArrowArray = &carray;
+#[allow(dead_code)]
+#[allow(unused_variables)]
+#[no_mangle]
+pub unsafe extern "C" fn datafusion_array_schema_get(array: ArrowArray) -> *const FFI_ArrowSchema {
+    ArrowArray::into_raw(array).1
+
+    // assert!(!ptr.is_null());
+
+    // let carray: *const ArrowArray = ptr;
+    // let array: &*const ArrowArray = &carray;
+
+    // let xxx: Box<ArrowArray> = Box::from_raw(ptr);
+
+    // let zzz = xxx.0;
+
+    // let zzz = ArrowArray::into_raw(prt);
 
     // let r1: *const ArrowArray = carray as *const ArrowArray;
 
