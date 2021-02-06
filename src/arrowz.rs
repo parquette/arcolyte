@@ -1,28 +1,41 @@
-use std::ffi::CStr;
-use std::ffi::CString;
-
-use std::os::raw::{c_char, c_int, c_longlong, c_ulong};
-
-use serde::{Serialize, Deserialize};
-
-// use std::fs::File;
-// use std::io::Read;
-use std::sync::Arc;
-
-use arrow::csv;
-use arrow::datatypes::{DataType, Field, Schema};
-
+#[allow(unused_imports)]
 
 use crate::ffi::*;
 use crate::errors::*;
 
+use std::ffi::CStr;
+use std::ffi::CString;
+use std::sync::Arc;
+use std::ptr;
+use std::os::raw::{c_char, c_int, c_longlong, c_ulong};
+
+use serde::{Serialize, Deserialize};
+
+use arrow::csv;
+
+use arrow::array::Array;
+use arrow::array::ArrayData;
+
+use arrow::record_batch::RecordBatch;
+use arrow::util::integration_util::*;
+use arrow::ffi::{ArrowArray, FFI_ArrowArray, FFI_ArrowSchema};
+
+#[allow(unused_imports)]
+use arrow::datatypes::Field;
+use arrow::datatypes::DataType;
+
+use arrow::datatypes::Schema;
+use arrow::datatypes::SchemaRef; // SchemaRef = Arc<Schema>
+
 use datafusion::dataframe::DataFrame;
+
+// use datafusion::logical_plan::DFSchemaRef;
+// use datafusion::logical_plan::DFSchema;
+
 use datafusion::execution::context::ExecutionContext;
 use datafusion::physical_plan::csv::CsvReadOptions;
 
-use std::ptr;
 
-use arrow::util::integration_util::*;
 
 #[cfg(feature = "prettyprint")]
 use arrow::util::pretty::print_batches;
@@ -159,8 +172,8 @@ fn demo_arrow_ffi() {
 }
 
 #[no_mangle] pub extern fn arrow_ffi() {
-    // let schema = arrow::ffi::FFI_ArrowSchema { format: null, name: null, metadata: null, flags: null, n_children: null, children: null, dictionary: null, release: null, private_data: null };
-    // let array = arrow::ffi::FFI_ArrowArray { length: null, null_count: null, offset: null, n_buffers: null, n_children: null, buffers: null, children: null, dictionary: null, release: null, private_data: null };
+    // let schema = FFI_ArrowSchema { format: null, name: null, metadata: null, flags: null, n_children: null, children: null, dictionary: null, release: null, private_data: null };
+    // let array = FFI_ArrowArray { length: null, null_count: null, offset: null, n_buffers: null, n_children: null, buffers: null, children: null, dictionary: null, release: null, private_data: null };
 }
 
 
@@ -188,7 +201,7 @@ pub extern fn arrow_to_json() {
     let _ = arrow_to_json2("/tmp/arrow_to_json.arrow", "/tmp/arrow_to_json.json", true);
 }
 
-fn load_arrow(file_name: &str) -> Result<std::sync::Arc<arrow::datatypes::Schema>> {
+fn load_arrow(file_name: &str) -> Result<Arc<Schema>> {
     let arrow_file = std::fs::File::open(file_name)?;
 
     eprintln!("Opened file…");
@@ -196,7 +209,7 @@ fn load_arrow(file_name: &str) -> Result<std::sync::Arc<arrow::datatypes::Schema
     let reader = arrow::ipc::reader::FileReader::try_new(arrow_file)?;
     eprintln!("Created Reader…");
 
-    let rschema: std::sync::Arc<arrow::datatypes::Schema> = reader.schema();
+    let rschema: Arc<Schema> = reader.schema();
     return Ok(rschema);
 }
 
@@ -214,7 +227,7 @@ fn arrow_to_json2(arrow_name: &str, json_name: &str, verbose: bool) -> Result<()
     let reader = arrow::ipc::reader::FileReader::try_new(arrow_file)?;
     eprintln!("Created Reader…");
 
-    let rschema: std::sync::Arc<arrow::datatypes::Schema> = reader.schema();
+    let rschema: Arc<Schema> = reader.schema();
 
     let rschema = load_arrow(arrow_name).unwrap();
 
@@ -251,20 +264,20 @@ fn arrow_to_json2(arrow_name: &str, json_name: &str, verbose: bool) -> Result<()
 }
 
 
-pub unsafe fn make_array_from_raw(array: *const arrow::ffi::FFI_ArrowArray, schema: *const arrow::ffi::FFI_ArrowSchema) -> Result<arrow::ffi::ArrowArray> {
-    let array: arrow::ffi::ArrowArray = arrow::ffi::ArrowArray::try_from_raw(array, schema)?;
-    // let data = Arc::new(arrow::ffi::ArrowArray::try_from(array)?);
+pub unsafe fn make_array_from_raw(array: *const FFI_ArrowArray, schema: *const FFI_ArrowSchema) -> Result<ArrowArray> {
+    let array: ArrowArray = ArrowArray::try_from_raw(array, schema)?;
+    // let data = Arc::new(ArrowArray::try_from(array)?);
     // Ok(arrow::array::make_array(data))
     // array.array.
     Ok(array)
 }
 
 
-// pub type AArray = arrow::ffi::FFI_ArrowArray;
-// pub type ASchema = arrow::ffi::FFI_ArrowSchema;
+// pub type AArray = FFI_ArrowArray;
+// pub type ASchema = FFI_ArrowSchema;
 
 #[no_mangle] pub unsafe extern 
-fn arrow_ffi_test(array: *const arrow::ffi::FFI_ArrowArray, schema: *const arrow::ffi::FFI_ArrowSchema) {
+fn arrow_ffi_test(array: *const FFI_ArrowArray, schema: *const FFI_ArrowSchema) {
     let _ = make_array_from_raw(array, schema);
 }
 
@@ -319,15 +332,15 @@ pub extern fn rust_hello_free(s: *mut c_char) {
 
 #[no_mangle]
 pub extern fn load_arrow_file(fname: *mut c_char) {
-    let arrow: Result<Arc<arrow::datatypes::Schema>> = unsafe { load_arrow(CStr::from_ptr(fname).to_str().unwrap()) };
+    let arrow: Result<Arc<Schema>> = unsafe { load_arrow(CStr::from_ptr(fname).to_str().unwrap()) };
     arrow.unwrap();
 }
 
 
 #[repr(C)]
 pub struct ArrowSchemaArray {
-    schema: *const arrow::ffi::FFI_ArrowSchema,
-    array: *const arrow::ffi::FFI_ArrowArray,
+    schema: *const FFI_ArrowSchema,
+    array: *const FFI_ArrowArray,
 }
 
 #[allow(dead_code)]
@@ -338,18 +351,18 @@ pub extern fn arrow_array_ffi_roundtrip(arrow: *const ArrowSchemaArray) -> Arrow
     return ArrowSchemaArray { array, schema };
 }
 
-fn arrow_array_ffi_roundtrip_impl(array: *const arrow::ffi::FFI_ArrowArray, schema: *const arrow::ffi::FFI_ArrowSchema) -> Result<(*const arrow::ffi::FFI_ArrowArray, *const arrow::ffi::FFI_ArrowSchema)> {
+fn arrow_array_ffi_roundtrip_impl(array: *const FFI_ArrowArray, schema: *const FFI_ArrowSchema) -> Result<(*const FFI_ArrowArray, *const FFI_ArrowSchema)> {
     // create a `ArrowArray` from the data.
-    let d1 = unsafe { arrow::ffi::ArrowArray::try_from_raw(array, schema) };
+    let d1: ArrowArray = unsafe { ArrowArray::try_from_raw(array, schema)? };
 
     // here we export the array as 2 pointers. We would have no control over ownership if it was not for
     // the release mechanism.
-    let (array2, schema2) = arrow::ffi::ArrowArray::into_raw(d1.unwrap());
+    let (array2, schema2) = ArrowArray::into_raw(d1);
 
     // simulate an external consumer by being the consumer
-    // let d1 = unsafe { arrow::ffi::ArrowArray::try_from_raw(array2, schema2) }?;
+    // let d1 = unsafe { ArrowArray::try_from_raw(array2, schema2) }?;
 
-    // let result = &arrow::array::ArrayData::try_from(d1);
+    // let result = &ArrayData::try_from(d1);
 
     return Ok((array2, schema2));
 }
@@ -357,7 +370,7 @@ fn arrow_array_ffi_roundtrip_impl(array: *const arrow::ffi::FFI_ArrowArray, sche
 #[allow(dead_code)]
 #[allow(unused_variables)]
 #[no_mangle]
-pub extern fn arrow_array_ffi_arg_param_demo(buf: arrow::ffi::FFI_ArrowArray, param: i64) {
+pub extern fn arrow_array_ffi_arg_param_demo(buf: FFI_ArrowArray, param: i64) {
 }
 
 
@@ -456,13 +469,8 @@ pub unsafe extern "C" fn datafusion_context_read_parquet(ptr: *mut ExecutionCont
 
 /// Destroy a `DataFrame` once you are done with it.
 #[no_mangle]
-pub extern "C" fn datafusion_dataframe_destroy(ptr: *mut DataFrameState) {
-    if ptr.is_null() {
-        return;
-    }
-    unsafe {
-        Box::from_raw(ptr);
-    }
+pub unsafe extern "C" fn datafusion_dataframe_destroy(ptr: *mut DataFrameState) {
+    if !ptr.is_null() { Box::from_raw(ptr); }
 }
 
 
@@ -493,12 +501,174 @@ pub unsafe extern "C" fn datafusion_dataframe_collect_count(ptr: *mut DataFrameS
     assert!(!ptr.is_null());
     let df = &mut *ptr;
 
-    // seems to rely on tokio; TODO: cache the runtime somewhere
-    match tokio::runtime::Runtime::new().unwrap().block_on(df.state.collect()) {
+    match tkrt().block_on(df.state.collect()) {
         Ok(x) => x.iter().map(|x| x.num_rows()).sum(),
         Err(e) => error_val(0, Error::with_chain(e, "Unable to collect DataFrame"))
     }
 }
+
+// async fn collect(&self) -> Result<Vec<RecordBatch>>;
+// fn schema(&self) -> &DFSchema
+
+
+// #[no_mangle]
+// pub unsafe extern "C" fn datafusion_dataframe_schema(ptr: *mut DataFrameState) -> *mut DFSchemaRef {
+//     assert!(!ptr.is_null());
+//     let df: &DataFrameState = &mut *ptr;
+//     let schema: &DFSchema = df.state.schema();
+
+//     let xxx: DFSchema = *schema;
+//     // let xxxx = xxx.to_dfschema_ref();
+
+//     DFSchemaRef(xxx)
+//     // *schema
+//     // Box::into_raw(Box::new(schema))
+//     // let schemaref = Arc::new(schema.to_dfschema_ref().unwrap());
+//     // schemaref
+// }
+
+// #[macro_use]
+use lazy_static::lazy_static;
+
+thread_local!{
+    // static LAST_ERROR: RefCell<Option<Box<dyn StdError>>> = RefCell::new(None);
+    static TOKIO_RUNTIME: tokio::runtime::Runtime = tokio::runtime::Runtime::new().unwrap();
+}
+
+// lazy_static! {
+//     static ref TOKIO_RUNTIME: tokio::runtime::Runtime = tokio::runtime::Runtime::new().unwrap();
+// }
+
+fn tkrt() -> tokio::runtime::Runtime {
+    // TOKIO_RUNTIME.with(|x| {
+    //     x
+    // })
+
+    // FOO.with(|f| {
+    //     assert_eq!(*f.borrow(), 1);
+    //     *f.borrow_mut() = 2;
+    // });
+    
+    tokio::runtime::Runtime::new().unwrap()
+}
+
+
+/// Destroy an `ArrowArray` once you are done with it.
+#[no_mangle]
+pub unsafe extern "C" fn datafusion_arrow_destroy(ptr: *mut ArrowArray) {
+    if !ptr.is_null() { Box::from_raw(ptr); }
+}
+
+// pub struct DataFrameState {
+//     /// Internal state for the context
+//     pub state: Arc<dyn DataFrame>,
+// }
+
+// pub struct ArrowArray {
+//     // these are ref-counted because they can be shared by multiple buffers.
+//     array: Arc<FFI_ArrowArray>,
+//     schema: Arc<FFI_ArrowSchema>,
+// }
+
+pub type ExtArrowArray = ArrowArray;
+
+#[no_mangle]
+pub unsafe extern "C" fn datafusion_array_empty_create() -> *mut ExtArrowArray { 
+    Box::into_raw(Box::new(ArrowArray::empty()))
+}
+
+#[allow(dead_code)]
+#[allow(unused_variables)]
+#[no_mangle]
+pub unsafe extern "C" fn datafusion_dataframe_collect_array(ptr: *mut DataFrameState, index: usize) -> *mut ExtArrowArray { 
+    assert!(!ptr.is_null());
+    let df = &mut *ptr;
+
+    let vec: Vec<RecordBatch> = tkrt().block_on(df.state.collect()).unwrap();
+    let first: &RecordBatch = &vec[0];
+    
+    // pub struct RecordBatch {
+    //     schema: SchemaRef,
+    //     columns: Vec<Arc<Array>>,
+    // }
+
+    let schema: SchemaRef = first.schema();
+    let columns: &[Arc<(dyn Array + 'static)>] = first.columns();
+
+    let col_count: usize = first.num_columns();
+    let row_count: usize = first.num_rows();
+
+    let column: &Arc<(dyn Array + 'static)> = first.column(index);
+
+    let array: &dyn Array = column.as_ref();
+
+    let array_data: Arc<ArrayData> = column.data();
+    let data_data_ref: &Arc<ArrayData> = column.data_ref();
+    let data_data_ref2: &ArrayData = array_data.as_ref();
+    let data_type: &DataType = column.data_type();
+    
+    let is_empty = array.is_empty();
+    let len: usize = array.len();
+
+    // convery the array to the C structs
+    let raw: (*const FFI_ArrowArray, *const FFI_ArrowSchema) = array.to_raw().unwrap();
+
+    // and re-wrap them in Arc
+    let array: ArrowArray = ArrowArray::try_from_raw(raw.0, raw.1).unwrap();
+
+    Box::into_raw(Box::new(array))
+}
+
+#[allow(dead_code)]
+#[allow(unused_variables)]
+#[no_mangle]
+pub unsafe extern "C" fn datafusion_array_schema_get(ptr: *mut ArrowArray) { // -> *const FFI_ArrowSchema {
+    assert!(!ptr.is_null());
+
+    let carray: *const ArrowArray = ptr;
+    let array: &*const ArrowArray = &carray;
+
+    // let r1: *const ArrowArray = carray as *const ArrowArray;
+
+    // let r1 = carray as ArrowArray; // “an `as` expression can only be used to convert between primitive types or to coerce to a specific trait object”
+
+    // let r2 = &mut num as *mut i32;
+
+    // let raw: () = ptr.arrow_ffi();
+
+    // let array: &mut ArrowArray = &mut *ptr;
+
+    // let array2: ArrowArray = *ptr;
+
+    // let b = *(ptr as *const ArrowArray);
+
+    // let array3: &ArrowArray = &*ptr;
+
+    // let array4: Box<ArrowArray> = Box::from_raw(ptr);
+
+    // let xxx: *mut ArrowArray = Box::into_raw(array4);
+
+    // let arrayref: &ArrowArray = array4.as_ref();
+
+    // let arrayref2: &ArrowArray = array4.as_mut();
+
+    // ptr.into_raw();
+
+    // ArrowArray::into_raw();
+
+
+    // let raw = array.into_raw();
+
+    // let zzz: ArrowArray = *array3; // “cannot move out of `*array3` which is behind a shared reference”
+
+    // let schema = array3.schema;
+
+    // let xxx: *const FFI_ArrowSchema = ArrowArray::into_raw(carray).1; 
+
+    // let xxx = ArrowArray::into_raw(ptr);
+    
+}
+
 
 #[no_mangle]
 pub extern "C" fn datafusion_context_create() -> *mut ExecutionContext {
@@ -507,14 +677,10 @@ pub extern "C" fn datafusion_context_create() -> *mut ExecutionContext {
 
 /// Destroy an `ExecutionContext` once you are done with it.
 #[no_mangle]
-pub extern "C" fn datafusion_context_destroy(ptr: *mut ExecutionContext) {
-    if ptr.is_null() {
-        return;
-    }
-    unsafe {
-        Box::from_raw(ptr);
-    }
+pub unsafe extern "C" fn datafusion_context_destroy(ptr: *mut ExecutionContext) {
+    if !ptr.is_null() { Box::from_raw(ptr); }
 }
+
 
 /// A string we have faith in
 unsafe fn c2str(chars: *const c_char) -> String {
@@ -559,13 +725,15 @@ mod test {
         eprintln!("Running datafusion_context_create…");
         let ctx = datafusion_context_create();
         let _ = unsafe { datafusion_context_register_csv(ctx, CString::new("test/data/csv/userdata1.csv").unwrap().into_raw(), CString::new("table1").unwrap().into_raw()) };
-        datafusion_context_destroy(ctx);
+        unsafe { datafusion_context_destroy(ctx); }
         eprintln!("…datafusion_context_destroy");
     }
 
     /// Example from: https://github.com/apache/arrow/blob/master/rust/arrow/examples/read_csv.rs
+    #[allow(dead_code)]
+    #[allow(unused_variables)]
     #[test]
-    pub extern fn run_arrow_csv() -> Result<()> {
+    pub fn test_arrow_csv() -> Result<()> {
         let schema = Schema::new(vec![
             Field::new("city", DataType::Utf8, false),
             Field::new("lat", DataType::Float64, false),
