@@ -337,6 +337,12 @@ pub extern fn load_arrow_file(fname: *mut c_char) {
 }
 
 
+// #[repr(C)]
+// pub struct ArrowSchemaVec {
+//     vec: Vec<RecordBatch>,
+// }
+
+
 #[repr(C)]
 pub struct ArrowSchemaArray {
     array: *const FFI_ArrowArray,
@@ -577,6 +583,17 @@ pub unsafe extern "C" fn datafusion_array_empty_create() -> *mut ExtArrowArray {
     Box::into_raw(Box::new(ArrowArray::empty()))
 }
 
+// #[allow(dead_code)]
+// #[allow(unused_variables)]
+// #[no_mangle]
+// pub unsafe extern "C" fn datafusion_dataframe_collect(ptr: *mut DataFrameState) -> ArrowSchemaVec {
+//     assert!(!ptr.is_null());
+//     let df = &mut *ptr;
+
+//     let vec: Vec<RecordBatch> = tkrt().block_on(df.state.collect()).unwrap();
+//     ArrowSchemaVec { vec }
+// }
+
 #[allow(dead_code)]
 #[allow(unused_variables)]
 #[no_mangle]
@@ -585,7 +602,8 @@ pub unsafe extern "C" fn datafusion_dataframe_collect_array(ptr: *mut DataFrameS
     let df = &mut *ptr;
 
     let vec: Vec<RecordBatch> = tkrt().block_on(df.state.collect()).unwrap();
-    let first: &RecordBatch = &vec[0];
+
+    let first: &RecordBatch = &vec[index];
     
     // pub struct RecordBatch {
     //     schema: SchemaRef,
