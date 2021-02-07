@@ -1,0 +1,34 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "cargo",
+			"subcommand": "build",
+			"problemMatcher": [
+				"$rustc"
+			],
+			"presentation": {
+				"revealProblems": "onProblem"
+			},
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+			"label": "Rust: cargo build - arcolyte",
+			
+		},
+		{
+			"type": "cargo",
+			"subcommand": "test",
+			"problemMatcher": [
+				"$rustc"
+			],
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            },
+			"label": "Rust: cargo test - arcolyte",
+			
+		}
+	]
+}

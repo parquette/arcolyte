@@ -1,14 +1,14 @@
 // //! The foreign function interface which exposes this library to non-Rust
 // //! languages.
 
-use std::ffi::CStr;
 use std::ptr;
 use std::slice;
 use std::error::Error as StdError;
 use std::cell::RefCell;
-use libc::{c_char, c_int, size_t};
+use libc::{c_char, c_int}; // , size_t};
+//use std::ffi::CStr;
 
-use crate::errors::*;
+//use crate::errors::*;
 
 
 thread_local!{
