@@ -36,8 +36,14 @@ serde = { version = "1.0", features = ["rc", "derive"] }
 serde_derive = "1.0"
 serde_json = { version = "1.0", features = ["preserve_order"] }
 
-tokio = { version = "1.1.1", features = ["rt", "rt-multi-thread"] }
+#tokio = {version = "0.2.13", features = ["rt-core"]}
+#arrow = { version = "3.0.0", features = ["prettyprint"] }
+#datafusion = "3.0.0"
+#parquet = { version = "3.0.0", features = ["arrow"] }
 
-arrow = { version = "3.0.0", features = ["prettyprint"] }
-datafusion = "3.0.0"
-parquet = { version = "3.0.0", features = ["arrow"] }
+tokio = { version = "1.1.1", features = ["rt", "rt-multi-thread"] }
+arrow = { git = "https://github.com/apache/arrow", version = "4.0.0-SNAPSHOT", features = ["prettyprint"] }
+datafusion = { git = "https://github.com/apache/arrow", version = "4.0.0-SNAPSHOT" }
+parquet = { git = "https://github.com/apache/arrow", version = "4.0.0-SNAPSHOT", features = ["arrow"] }
+
+
