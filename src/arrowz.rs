@@ -583,33 +583,21 @@ pub unsafe extern "C" fn datafusion_array_empty_create() -> *mut ExtArrowArray {
     Box::into_raw(Box::new(ArrowArray::empty()))
 }
 
-// #[allow(dead_code)]
-// #[allow(unused_variables)]
-// #[no_mangle]
-// pub unsafe extern "C" fn datafusion_dataframe_collect(ptr: *mut DataFrameState) -> ArrowSchemaVec {
-//     assert!(!ptr.is_null());
-//     let df = &mut *ptr;
-
-//     let vec: Vec<RecordBatch> = tkrt().block_on(df.state.collect()).unwrap();
-//     ArrowSchemaVec { vec }
-// }
-
-#[allow(dead_code)]
-#[allow(unused_variables)]
 #[no_mangle]
-pub unsafe extern "C" fn datafusion_dataframe_collect_vector(ptr: *mut DataFrameState, index: usize) -> ArrowVectorFFI {
+pub unsafe extern "C" fn datafusion_dataframe_collect_vector(ptr: *mut DataFrameState, index: usize) -> *mut ArrowVectorFFI {
     assert!(!ptr.is_null());
+    match datafusion_dataframe_collect_vector_impl(ptr, index) {
+        Ok(x) => Box::into_raw(Box::new(x)),
+        Err(e) => error_val(*ptr::null_mut(), Error::with_chain(e, "Unable to execute query"))
+    }
+}
+
+unsafe fn datafusion_dataframe_collect_vector_impl(ptr: *mut DataFrameState, index: usize) -> Result<ArrowVectorFFI> {
     let df = &mut *ptr;
 
-    let vec: Vec<RecordBatch> = tkrt().block_on(df.state.collect()).unwrap();
-
-    let first: &RecordBatch = &vec[index];
+    let vec: Vec<RecordBatch> = tkrt().block_on(df.state.collect())?;
+    let first: &RecordBatch = &vec[0];
     
-    // pub struct RecordBatch {
-    //     schema: SchemaRef,
-    //     columns: Vec<Arc<Array>>,
-    // }
-
     let schema: SchemaRef = first.schema();
     let columns: &[Arc<(dyn Array + 'static)>] = first.columns();
 
@@ -629,20 +617,64 @@ pub unsafe extern "C" fn datafusion_dataframe_collect_vector(ptr: *mut DataFrame
     let len: usize = array.len();
 
     // convery the array to the C structs
-    let raw: (*const FFI_ArrowArray, *const FFI_ArrowSchema) = array.to_raw().unwrap();
+    let raw: (*const FFI_ArrowArray, *const FFI_ArrowSchema) = array.to_raw()?;
     let array = raw.0;
     let schema = raw.1;
         
     let asa = ArrowVectorFFI { array, schema };
 
-    asa
-    // return asa;
-
-    // and re-wrap them in Arc
-    // let array: ArrowArray = ArrowArray::try_from_raw(raw.0, raw.1).unwrap();
-
-    // Box::into_raw(Box::new(array))
+    Ok(asa)
 }
+
+// #[allow(dead_code)]
+// #[allow(unused_variables)]
+// #[no_mangle]
+// pub unsafe extern "C" fn datafusion_dataframe_collect_vector(ptr: *mut DataFrameState, index: usize) -> ArrowVectorFFI {
+//     assert!(!ptr.is_null());
+//     let df = &mut *ptr;
+
+//     let vec: Vec<RecordBatch> = tkrt().block_on(df.state.collect()).unwrap();
+
+//     let first: &RecordBatch = &vec[index];
+    
+//     // pub struct RecordBatch {
+//     //     schema: SchemaRef,
+//     //     columns: Vec<Arc<Array>>,
+//     // }
+
+//     let schema: SchemaRef = first.schema();
+//     let columns: &[Arc<(dyn Array + 'static)>] = first.columns();
+
+//     let col_count: usize = first.num_columns();
+//     let row_count: usize = first.num_rows();
+
+//     let column: &Arc<(dyn Array + 'static)> = first.column(index);
+
+//     let array: &dyn Array = column.as_ref();
+
+//     let array_data: Arc<ArrayData> = column.data();
+//     let data_data_ref: &Arc<ArrayData> = column.data_ref();
+//     let data_data_ref2: &ArrayData = array_data.as_ref();
+//     let data_type: &DataType = column.data_type();
+    
+//     let is_empty = array.is_empty();
+//     let len: usize = array.len();
+
+//     // convery the array to the C structs
+//     let raw: (*const FFI_ArrowArray, *const FFI_ArrowSchema) = array.to_raw().unwrap();
+//     let array = raw.0;
+//     let schema = raw.1;
+        
+//     let asa = ArrowVectorFFI { array, schema };
+
+//     asa
+//     // return asa;
+
+//     // and re-wrap them in Arc
+//     // let array: ArrowArray = ArrowArray::try_from_raw(raw.0, raw.1).unwrap();
+
+//     // Box::into_raw(Box::new(array))
+// }
 
 #[allow(dead_code)]
 #[allow(unused_variables)]
