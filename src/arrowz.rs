@@ -344,7 +344,7 @@ pub extern fn load_arrow_file(fname: *mut c_char) {
 
 
 #[repr(C)]
-pub struct ArrowSchemaArray {
+pub struct ArrowVectorFFI {
     array: *const FFI_ArrowArray,
     schema: *const FFI_ArrowSchema,
 }
@@ -352,9 +352,9 @@ pub struct ArrowSchemaArray {
 #[allow(dead_code)]
 #[allow(unused_variables)]
 #[no_mangle]
-pub extern fn arrow_array_ffi_roundtrip(arrow: *const ArrowSchemaArray) -> ArrowSchemaArray {
+pub extern fn arrow_array_ffi_roundtrip(arrow: *const ArrowVectorFFI) -> ArrowVectorFFI {
     let (array, schema) = unsafe { arrow_array_ffi_roundtrip_impl((*arrow).array, (*arrow).schema).unwrap() };
-    return ArrowSchemaArray { array, schema };
+    return ArrowVectorFFI { array, schema };
 }
 
 fn arrow_array_ffi_roundtrip_impl(array: *const FFI_ArrowArray, schema: *const FFI_ArrowSchema) -> Result<(*const FFI_ArrowArray, *const FFI_ArrowSchema)> {
@@ -597,7 +597,7 @@ pub unsafe extern "C" fn datafusion_array_empty_create() -> *mut ExtArrowArray {
 #[allow(dead_code)]
 #[allow(unused_variables)]
 #[no_mangle]
-pub unsafe extern "C" fn datafusion_dataframe_collect_array(ptr: *mut DataFrameState, index: usize) -> ArrowSchemaArray { 
+pub unsafe extern "C" fn datafusion_dataframe_collect_vector(ptr: *mut DataFrameState, index: usize) -> ArrowVectorFFI {
     assert!(!ptr.is_null());
     let df = &mut *ptr;
 
@@ -633,7 +633,7 @@ pub unsafe extern "C" fn datafusion_dataframe_collect_array(ptr: *mut DataFrameS
     let array = raw.0;
     let schema = raw.1;
         
-    let asa = ArrowSchemaArray { array, schema };
+    let asa = ArrowVectorFFI { array, schema };
 
     asa
     // return asa;
