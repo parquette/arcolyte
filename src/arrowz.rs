@@ -482,6 +482,16 @@ pub unsafe extern "C" fn datafusion_dataframe_destroy(ptr: *mut DataFrameState) 
 
 /// E.g.: `"SELECT a, MIN(b) FROM example GROUP BY a LIMIT 100"`
 #[no_mangle]
+pub unsafe extern "C" fn datafusion_context_check_sql(ptr: *mut ExecutionContext, sql: *const c_char) -> *mut bool {
+    assert!(!ptr.is_null());
+    let ctx = &mut *ptr;
+    match ctx.create_logical_plan(&c2str(sql)) {
+        Ok(_) => Box::into_raw(Box::new(true)),
+        Err(e) => error_ptr(Error::with_chain(e, "Bad SQL"))
+    }
+}
+
+#[no_mangle]
 pub unsafe extern "C" fn datafusion_context_execute_sql(ptr: *mut ExecutionContext, sql: *const c_char) -> *mut DataFrameState {
     assert!(!ptr.is_null());
     let ctx = &mut *ptr;
@@ -588,7 +598,7 @@ pub unsafe extern "C" fn datafusion_dataframe_collect_vector(ptr: *mut DataFrame
     assert!(!ptr.is_null());
     match datafusion_dataframe_collect_vector_impl(ptr, index) {
         Ok(x) => Box::into_raw(Box::new(x)),
-        Err(e) => error_val(*ptr::null_mut(), Error::with_chain(e, "Unable to execute query"))
+        Err(e) => error_val(ptr::null_mut(), Error::with_chain(e, "Unable to execute query"))
     }
 }
 
