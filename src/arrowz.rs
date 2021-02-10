@@ -512,37 +512,6 @@ pub unsafe extern "C" fn datafusion_dataframe_limit(ptr: *mut DataFrameState, co
     }
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn datafusion_dataframe_collect_count(ptr: *mut DataFrameState) -> usize {
-    assert!(!ptr.is_null());
-    let df = &mut *ptr;
-
-    match tkrt().block_on(df.state.collect()) {
-        Ok(x) => x.iter().map(|x| x.num_rows()).sum(),
-        Err(e) => error_val(0, Error::with_chain(e, "Unable to collect DataFrame"))
-    }
-}
-
-// async fn collect(&self) -> Result<Vec<RecordBatch>>;
-// fn schema(&self) -> &DFSchema
-
-
-// #[no_mangle]
-// pub unsafe extern "C" fn datafusion_dataframe_schema(ptr: *mut DataFrameState) -> *mut DFSchemaRef {
-//     assert!(!ptr.is_null());
-//     let df: &DataFrameState = &mut *ptr;
-//     let schema: &DFSchema = df.state.schema();
-
-//     let xxx: DFSchema = *schema;
-//     // let xxxx = xxx.to_dfschema_ref();
-
-//     DFSchemaRef(xxx)
-//     // *schema
-//     // Box::into_raw(Box::new(schema))
-//     // let schemaref = Arc::new(schema.to_dfschema_ref().unwrap());
-//     // schemaref
-// }
-
 // #[macro_use]
 use lazy_static::lazy_static;
 
@@ -575,17 +544,6 @@ pub unsafe extern "C" fn datafusion_arrow_destroy(ptr: *mut ArrowArray) {
     if !ptr.is_null() { Box::from_raw(ptr); }
 }
 
-// pub struct DataFrameState {
-//     /// Internal state for the context
-//     pub state: Arc<dyn DataFrame>,
-// }
-
-// pub struct ArrowArray {
-//     // these are ref-counted because they can be shared by multiple buffers.
-//     array: Arc<FFI_ArrowArray>,
-//     schema: Arc<FFI_ArrowSchema>,
-// }
-
 pub type ExtArrowArray = ArrowArray;
 
 #[no_mangle]
@@ -598,7 +556,7 @@ pub unsafe extern "C" fn datafusion_dataframe_collect_vector(ptr: *mut DataFrame
     assert!(!ptr.is_null());
     match datafusion_dataframe_collect_vector_impl(ptr, index) {
         Ok(x) => Box::into_raw(Box::new(x)),
-        Err(e) => error_val(ptr::null_mut(), Error::with_chain(e, "Unable to execute query"))
+        Err(e) => error_val(ptr::null_mut(), e) // Error::with_chain(e, "Unable to execute query"))
     }
 }
 
