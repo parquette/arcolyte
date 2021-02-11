@@ -480,6 +480,7 @@ pub unsafe extern "C" fn datafusion_dataframe_destroy(ptr: *mut DataFrameState) 
 }
 
 
+/// Checks the given SQL for validity
 /// E.g.: `"SELECT a, MIN(b) FROM example GROUP BY a LIMIT 100"`
 #[no_mangle]
 pub unsafe extern "C" fn datafusion_context_check_sql(ptr: *mut ExecutionContext, sql: *const c_char) -> *mut bool {
