@@ -11,3 +11,5 @@ Cargo.lock
 
 ## Other
 .*.swp
+
+.DS_Store
