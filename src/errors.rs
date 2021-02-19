@@ -12,11 +12,6 @@ error_chain!{
         Io(::std::io::Error) #[cfg(unix)];
     }
 
-    
-    // foreign_links {
-    //     Kube(::kube::Error);
-    // }
-
     // errors {
     //     CommunicationError(t: String) {
     //         description("unable to communicate with k8s")
