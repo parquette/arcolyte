@@ -429,7 +429,7 @@ pub unsafe extern "C" fn datafusion_context_check_sql(ptr: *mut ExecutionContext
     let ctx = &mut *ptr;
     match ctx.create_logical_plan(&c2str(sql)) {
         Ok(_) => Box::into_raw(Box::new(true)),
-        Err(e) => error_ptr(Error::with_chain(e, "Bad SQL"))
+        Err(e) => error_val(ptr::null_mut(), e) // error_ptr(Error::with_chain(e, "Bad SQL"))
     }
 }
 
@@ -439,7 +439,7 @@ pub unsafe extern "C" fn datafusion_context_execute_sql(ptr: *mut ExecutionConte
     let ctx = &mut *ptr;
     match ctx.sql(&c2str(sql)) {
         Ok(df) => Box::into_raw(Box::new(DataFrameState { state: df })),
-        Err(e) => error_ptr(Error::with_chain(e, "Unable to execute SQL"))
+        Err(e) => error_val(ptr::null_mut(), e) // error_ptr(Error::with_chain(e, "Unable to execute SQL"))
     }
 }
 
@@ -450,7 +450,7 @@ pub unsafe extern "C" fn datafusion_dataframe_limit(ptr: *mut DataFrameState, co
     let df = &mut *ptr;
     match df.state.limit(count) {
         Ok(df2) => Box::into_raw(Box::new(DataFrameState { state: df2 })),
-        Err(e) => error_ptr(Error::with_chain(e, "Unable to limit dataframe"))
+        Err(e) => error_val(ptr::null_mut(), e) // error_ptr(Error::with_chain(e, "Unable to limit dataframe"))
     }
 }
 
@@ -743,7 +743,7 @@ pub unsafe extern "C" fn datafusion_context_register_csv(ptr: *mut ExecutionCont
     let ctx = &mut *ptr;
     let _: *mut () = match ctx.register_csv(&c2str(table_name), &c2str(file_name), CsvReadOptions::new()) {
         Ok(_) => ptr::null_mut(),
-        Err(e) => error_ptr(Error::with_chain(e, "Unable to register CSV file"))
+        Err(e) => error_val(ptr::null_mut(), e) // error_ptr(Error::with_chain(e, "Unable to register CSV file"))
     };
 }
 
@@ -753,7 +753,7 @@ pub unsafe extern "C" fn datafusion_context_register_parquet(ptr: *mut Execution
     let ctx = &mut *ptr;
     let _: *mut () = match ctx.register_parquet(&c2str(table_name), &c2str(file_name)) {
         Ok(_) => ptr::null_mut(),
-        Err(e) => error_ptr(Error::with_chain(e, "Unable to register Parquet file"))
+        Err(e) => error_val(ptr::null_mut(), e) // error_ptr(Error::with_chain(e, "Unable to register Parquet file"))
     };
 }
 
