@@ -47,3 +47,4 @@ datafusion = { git = "https://github.com/apache/arrow", version = "4.0.0-SNAPSHO
 parquet = { git = "https://github.com/apache/arrow", version = "4.0.0-SNAPSHOT", features = ["arrow"] }
 
 
+
