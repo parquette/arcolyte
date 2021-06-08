@@ -1,6 +1,6 @@
 [package]
 name = "arcolyte"
-version = "0.3.0"
+version = "0.5.0"
 authors = ["Parquette"]
 edition = "2018"
 
@@ -21,31 +21,24 @@ serde_json = "1.0.61"
 [dependencies]
 
 error-chain = "0.12.4"
-fern = "0.4.3"
-env_logger = "0.8.2"
+log = "0.3.8" 
+env_logger = "0.8.3"
 chrono = "0.4.19"
-log = "0.3.8"
+fern = "0.4.3"
 
 futures = "0.3.12"
 lazy_static = "1.4.0"
 
 libc = "0.2.84"
-libloading = "0.4.2"
 
+libloading = "0.4.2"
 serde = { version = "1.0", features = ["rc", "derive"] }
 serde_derive = "1.0"
 serde_json = { version = "1.0", features = ["preserve_order"] }
 
-#tokio = {version = "0.2.13", features = ["rt-core"]}
-#arrow = { version = "3.0.0", features = ["prettyprint"] }
-#datafusion = "3.0.0"
-#parquet = { version = "3.0.0", features = ["arrow"] }
-
 tokio = { version = "1.1.1", features = ["rt", "rt-multi-thread"] }
-arrow = { git = "https://github.com/apache/arrow", version = "4.0.0-SNAPSHOT", features = ["prettyprint"] }
-datafusion = { git = "https://github.com/apache/arrow", version = "4.0.0-SNAPSHOT" }
-parquet = { git = "https://github.com/apache/arrow", version = "4.0.0-SNAPSHOT", features = ["arrow"] }
-
-
+arrow = { version = "4.2.0", features = ["prettyprint"] }
+parquet = { version = "4.2.0", features = ["arrow"] }
+datafusion = { version = "4.0.0" }
 
 
